@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package>
+  <name>gnss_broadcaster</name>
+  <version>0.1.0</version>
+  <description>Broadcasts GNSS positions</description>
+
+  <maintainer email="mizuno.naoki@rm.is.tohoku.ac.jp">Naoki Mizuno</maintainer>
+
+  <license>MIT</license>
+
+  <url type="website">https://github.com/tado-aev/gnss_broadcaster</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>tf2</run_depend>
+  <run_depend>nmea_msgs</run_depend>
+
+  <export>
+  </export>
+</package>
