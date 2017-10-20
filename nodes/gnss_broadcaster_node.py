@@ -15,46 +15,68 @@ gps_antenna_frame = rospy.get_param('~gps_antenna_frame', 'gps_antenna')
 plane = rospy.get_param('~plane')
 required_quality = rospy.get_param('~required_quality', ['4', '5'])
 
+# Populated when ready
+latest_fix = None
 latest_heading = None
+
+
+class Fix:
+    def __init__(self, msg):
+        self.header = msg.header
+        rest, self.checksum = msg.sentence.split('*')
+        self.msg_id, self.utc, self.lat, self.lat_dir, \
+        self.lon, self.lon_dir, self.quality, self.num_sat, \
+        self.hdop, self.orthometric_height, self.orthometric_height_unit, self. geoid_sep, \
+        self.geoid_sep_unit, self.age, self.ref_station_id = rest.split(',')
+
+        self.lat = float(self.lat)
+        self.lon = float(self.lon)
+        self.orthometric_height = float(self.orthometric_height)
+        self.geoid_sep = float(self.geoid_sep)
+        self.height = self.orthometric_height + self.geoid_sep
 
 
 def heading_callback(msg):
     global latest_heading
-
     latest_heading = msg
+    send_transform()
 
 
 def nmea_callback(msg):
+    global required_quality
+    global latest_fix
+    latest_fix = Fix(msg)
+
+    if latest_fix.quality not in required_quality:
+        latest_fix = None
+        return
+
+    send_transform()
+
+
+def send_transform():
     global gps_origin_frame
     global gps_antenna_frame
     global plane
-    global required_quality
+    global latest_fix
     global latest_heading
 
-    rest, checksum = msg.sentence.split('*')
-    msg_id, utc, lat, lat_dir, \
-    lon, lon_dir, quality, num_sat, \
-    hdop, height, _, geoid_sep, \
-    _, age, ref_station_id = rest.split(',')
-
-    if quality not in required_quality:
+    if latest_fix is None or latest_heading is None:
         return
 
     converter = gnss_broadcaster.GeoPosConv()
     converter.set_plane(plane)
-
-    converter.set_llh_nmea_degrees(lat, lon, height)
+    converter.set_llh_nmea_degrees(latest_fix.lat, latest_fix.lon, latest_fix.height)
     x = converter.y()
     y = converter.x()
     z = converter.z()
     translation = (x, y, z)
-    rotation = tf.transformations.quaternion_from_euler(0, 0, 0)
-    if not latest_heading:
-        rotation = latest_heading.quaternion
+    q = latest_heading.quaternion
+    rotation = (q.x, q.y, q.z, q.w)
     tf_b = tf.TransformBroadcaster()
     tf_b.sendTransform(translation,
                        rotation,
-                       msg.header.stamp,
+                       latest_fix.header.stamp,
                        gps_antenna_frame,
                        gps_origin_frame)
 
