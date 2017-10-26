@@ -1,0 +1,7 @@
+gps_origin_frame: 'gps_origin'
+gps_position_frame: 'javad_delta'
+gps_orientation_frame: 'ssv102'
+# Offset, after combining the position and orientation
+gps_position_to_base: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+# Rotate 90 degrees CCW
+gps_orientation_to_base: [[0.0, 0.0, 0.0], [0.0 , 0.0 , 0.70710678, 0.70710678]]
