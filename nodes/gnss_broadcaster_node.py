@@ -2,6 +2,9 @@
 
 import rospy
 import tf
+import tf.transformations
+
+from operator import add
 
 rospy.init_node('gnss_broadcaster')
 # Get params
@@ -12,24 +15,31 @@ gps_orientation_frame = rospy.get_param('~gps_orientation_frame', 'gps_orientati
 gps_orientation_to_base = rospy.get_param('~gps_orientation_to_base', [[0, 0, 0], [0, 0, 0, 1]])
 gps_base_frame = rospy.get_param('~gps_base_frame', 'gps_base_link')
 
+tf_l = tf.TransformListener()
+
 while not rospy.is_shutdown():
-    t = rospy.Time.now()
+    rospy.sleep(0.1)
+
+    frames = tf_l.getFrameStrings()
+    t = rospy.Time(0)
 
     # Position
-    tf_l_p = tf.TransformListener()
-    tf_l_p.waitForTransform(gps_position_frame, gps_origin_frame, t, rospy.Duration(5))
-    tf_p = tf_l_p.lookupTransform(gps_position_frame, gps_origin_frame, t)
+    if gps_position_frame not in frames:
+        continue
+    tf_l.waitForTransform(gps_origin_frame, gps_position_frame, t, rospy.Duration(5))
+    tf_p = tf_l.lookupTransform(gps_origin_frame, gps_position_frame, t)
 
     # Orientation
-    tf_l_o = tf.TransformListener()
-    tf_l_o.waitForTransform(gps_orientation_frame, gps_origin_frame, t, rospy.Duration(5))
-    tf_o = tf_l_o.lookupTransform(gps_orientation_frame, gps_origin_frame, t)
+    if gps_orientation_frame not in frames:
+        continue
+    tf_l.waitForTransform(gps_origin_frame, gps_orientation_frame, t, rospy.Duration(5))
+    tf_o = tf_l.lookupTransform(gps_origin_frame, gps_orientation_frame, t)
 
-    # (Virtual) antenna's pose before shifting it over to gps_base_link
-    gps_base = (tf_p[0], tf_o[1])
     # Add the offset of the antenna
-    gps_base[0] += gps_position_to_base[0]
-    gps_base[1] += gps_orientation_to_base[1]
+    gps_base = (
+        list(map(add, tf_p[0], gps_position_to_base[0])),
+        tf.transformations.quaternion_multiply(tf_o[1], gps_orientation_to_base[1])
+    )
 
     # Broadcast gps_base_frame
     tf_b = tf.TransformBroadcaster()
