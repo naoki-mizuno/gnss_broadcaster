@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="gnss_broadcaster" type="gnss_broadcaster_node.py" name="gnss_broadcaster" >
+    <rosparam command="load" file="$(find gnss_broadcaster)/configs/coms.yaml" />
+  </node>
+</launch>
