@@ -3,6 +3,7 @@
 import rospy
 import tf
 import tf.transformations
+from tf2_ros import TransformException
 
 from operator import add
 
@@ -21,19 +22,20 @@ tf_l = tf.TransformListener()
 while not rospy.is_shutdown():
     rospy.sleep(0.1)
 
-    frames = tf_l.getFrameStrings()
     t = rospy.Time(0)
 
     # Position
-    if gps_position_frame not in frames:
+    try:
+        tf_l.waitForTransform(gps_origin_frame, gps_position_frame, t, rospy.Duration(5))
+    except TransformException:
         continue
-    tf_l.waitForTransform(gps_origin_frame, gps_position_frame, t, rospy.Duration(5))
     tf_p = tf_l.lookupTransform(gps_origin_frame, gps_position_frame, t)
 
     # Orientation
-    if gps_orientation_frame not in frames:
+    try:
+        tf_l.waitForTransform(gps_origin_frame, gps_orientation_frame, t, rospy.Duration(5))
+    except TransformException:
         continue
-    tf_l.waitForTransform(gps_origin_frame, gps_orientation_frame, t, rospy.Duration(5))
     tf_o = tf_l.lookupTransform(gps_origin_frame, gps_orientation_frame, t)
 
     # Broadcast gps_antenna (frame representing the pose of the GPS antenna) and gps_base_link
