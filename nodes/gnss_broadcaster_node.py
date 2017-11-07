@@ -22,7 +22,7 @@ tf_l = tf.TransformListener()
 while not rospy.is_shutdown():
     rospy.sleep(0.1)
 
-    t = rospy.Time(0)
+    t = rospy.Time.now()
 
     # Position
     try:
@@ -40,7 +40,6 @@ while not rospy.is_shutdown():
 
     # Broadcast gps_antenna (frame representing the pose of the GPS antenna) and gps_base_link
     tf_b = tf.TransformBroadcaster()
-    t = rospy.Time.now()
     # GPS antenna
     tf_b.sendTransform(tf_p[0], tf_o[1], t, gps_antenna_frame, gps_origin_frame)
     # Vehicle pose
